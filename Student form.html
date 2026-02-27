@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Portal — Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #0d0d0d;
+    --paper: #f5f0e8;
+    --accent: #c94f2a;
+    --muted: #8a8070;
+    --border: #d4ccc0;
+    --success: #2a7c4f;
+    --error: #c94f2a;
+  }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Decorative background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px; right: -200px;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(201,79,42,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .wrapper {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    background: white;
+    border: 1.5px solid var(--border);
+    box-shadow: 8px 8px 0 var(--ink);
+    width: min(700px, 95vw);
+    position: relative;
+    z-index: 1;
+    animation: slideUp 0.5s cubic-bezier(0.16,1,0.3,1) both;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Left panel */
+  .panel {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 48px 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .panel::before {
+    content: '';
+    position: absolute;
+    bottom: -60px; left: -60px;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    border: 40px solid rgba(245,240,232,0.06);
+  }
+
+  .panel-badge {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .panel h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    line-height: 1.2;
+    margin-top: 16px;
+    color: var(--paper);
+  }
+
+  .panel-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: auto;
+    padding-top: 48px;
+  }
+
+  .stat {
+    border-top: 1px solid rgba(245,240,232,0.15);
+    padding-top: 12px;
+  }
+
+  .stat-num {
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--paper);
+  }
+
+  .stat-label {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* Right panel (form area) */
+  .form-area {
+    padding: 48px 40px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 0;
+    border: 1.5px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 36px;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 10px 0;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.2s;
+  }
+
+  .tab.active {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .form { display: none; flex-direction: column; gap: 20px; }
+  .form.active { display: flex; }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  label {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  input {
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    background: var(--paper);
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s;
+    border-radius: 2px;
+  }
+
+  input:focus {
+    border-color: var(--ink);
+  }
+
+  input::placeholder { color: var(--border); }
+
+  .btn {
+    margin-top: 8px;
+    padding: 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-weight: 500;
+    border: 1.5px solid var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 2px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn:hover {
+    background: transparent;
+    color: var(--ink);
+  }
+
+  .btn:active { transform: translateY(1px); }
+
+  .msg {
+    padding: 10px 14px;
+    font-size: 12px;
+    border-radius: 2px;
+    display: none;
+    animation: fadeIn 0.3s;
+  }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .msg.success { background: #e8f5ee; border: 1px solid var(--success); color: var(--success); display: block; }
+  .msg.error   { background: #fdf0ec; border: 1px solid var(--error);   color: var(--error);   display: block; }
+
+  /* Dashboard */
+  .dashboard {
+    display: none;
+    flex-direction: column;
+    gap: 20px;
+    animation: slideUp 0.4s both;
+  }
+
+  .dashboard.show { display: flex; }
+
+  .welcome-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  .welcome-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 26px;
+  }
+
+  .welcome-id {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .logout-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s;
+  }
+
+  .logout-btn:hover { border-color: var(--error); color: var(--error); }
+
+  .cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .card {
+    background: var(--paper);
+    border: 1.5px solid var(--border);
+    padding: 16px;
+    border-radius: 2px;
+  }
+
+  .card-label { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); }
+  .card-val { font-size: 18px; font-weight: 500; margin-top: 6px; color: var(--ink); }
+
+  /* DB table */
+  .db-section h3 {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  th { letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 400; }
+  td { color: var(--ink); }
+
+  tr:last-child td { border-bottom: none; }
+
+  @media (max-width: 580px) {
+    .wrapper { grid-template-columns: 1fr; }
+    .panel { padding: 32px 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .panel h1 { grid-column: 1/-1; }
+    .panel-stats { flex-direction: row; padding-top: 0; }
+    .form-area { padding: 32px 24px; }
+    .cards { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+  <!-- Left panel -->
+  <div class="panel">
+    <div>
+      <div class="panel-badge">Academic Year 2025–26</div>
+      <h1>Student Portal</h1>
+    </div>
+    <div class="panel-stats">
+      <div class="stat">
+        <div class="stat-num" id="reg-count">0</div>
+        <div class="stat-label">Registered</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" id="login-count">0</div>
+        <div class="stat-label">Logins Today</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right panel -->
+  <div class="form-area">
+
+    <!-- AUTH FORMS -->
+    <div id="auth-section">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('login')">Sign In</button>
+        <button class="tab" onclick="switchTab('register')">Register</button>
+      </div>
+
+      <!-- Login form -->
+      <form class="form active" id="login-form" onsubmit="handleLogin(event)">
+        <div class="field">
+          <label>Student ID</label>
+          <input type="text" id="l-id" placeholder="e.g. STU-2024-001" required>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="l-pass" placeholder="••••••••" required>
+        </div>
+        <div class="msg" id="login-msg"></div>
+        <button type="submit" class="btn">Sign In →</button>
+      </form>
+
+      <!-- Register form -->
+      <form class="form" id="register-form" onsubmit="handleRegister(event)">
+        <div class="field">
+          <label>Full Name</label>
+          <input type="text" id="r-name" placeholder="Maria Santos" required>
+        </div>
+        <div class="field">
+          <label>Student ID</label>
+          <input type="text" id="r-id" placeholder="STU-2024-XXX" required>
+        </div>
+        <div class="field">
+          <label>Course</label>
+          <input type="text" id="r-course" placeholder="Computer Science" required>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="r-pass" placeholder="Min. 6 characters" required minlength="6">
+        </div>
+        <div class="msg" id="register-msg"></div>
+        <button type="submit" class="btn">Create Account →</button>
+      </form>
+    </div>
+
+    <!-- DASHBOARD (shown after login) -->
+    <div class="dashboard" id="dashboard">
+      <div class="welcome-row">
+        <div>
+          <div class="welcome-name" id="dash-name">—</div>
+          <div class="welcome-id" id="dash-id">—</div>
+        </div>
+        <button class="logout-btn" onclick="logout()">Log out</button>
+      </div>
+
+      <div class="cards">
+        <div class="card">
+          <div class="card-label">Course</div>
+          <div class="card-val" id="dash-course">—</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Session</div>
+          <div class="card-val" id="dash-session">—</div>
+        </div>
+      </div>
+
+      <div class="db-section">
+        <h3>Student Database</h3>
+        <table id="db-table">
+          <thead>
+            <tr>
+              <th>Student ID</th>
+              <th>Name</th>
+              <th>Course</th>
+              <th>Registered</th>
+            </tr>
+          </thead>
+          <tbody id="db-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ── Simple in-memory "database" (backed by sessionStorage for this session) ──
+  const DB_KEY   = 'student_db';
+  const STAT_KEY = 'student_stats';
+
+  function getDB() {
+    try { return JSON.parse(sessionStorage.getItem(DB_KEY)) || []; }
+    catch { return []; }
+  }
+
+  function saveDB(db) {
+    sessionStorage.setItem(DB_KEY, JSON.stringify(db));
+  }
+
+  function getStats() {
+    try { return JSON.parse(sessionStorage.getItem(STAT_KEY)) || { logins: 0 }; }
+    catch { return { logins: 0 }; }
+  }
+
+  function saveStats(s) { sessionStorage.setItem(STAT_KEY, JSON.stringify(s)); }
+
+  // ── Tab switching ──
+  function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach((t, i) => {
+      t.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'));
+    });
+    document.getElementById('login-form').classList.toggle('active', tab === 'login');
+    document.getElementById('register-form').classList.toggle('active', tab === 'register');
+    clearMsgs();
+  }
+
+  function clearMsgs() {
+    ['login-msg','register-msg'].forEach(id => {
+      const el = document.getElementById(id);
+      el.className = 'msg';
+      el.textContent = '';
+    });
+  }
+
+  function showMsg(id, type, text) {
+    const el = document.getElementById(id);
+    el.className = 'msg ' + type;
+    el.textContent = text;
+  }
+
+  // ── Register ──
+  function handleRegister(e) {
+    e.preventDefault();
+    const name   = document.getElementById('r-name').value.trim();
+    const id     = document.getElementById('r-id').value.trim().toUpperCase();
+    const course = document.getElementById('r-course').value.trim();
+    const pass   = document.getElementById('r-pass').value;
+
+    const db = getDB();
+    if (db.find(s => s.id === id)) {
+      return showMsg('register-msg', 'error', 'Student ID already registered.');
+    }
+
+    db.push({ id, name, course, pass, registered: new Date().toLocaleDateString() });
+    saveDB(db);
+    updateStats();
+    showMsg('register-msg', 'success', `Account created for ${name}. You can now sign in.`);
+    e.target.reset();
+    setTimeout(() => switchTab('login'), 1500);
+  }
+
+  // ── Login ──
+  function handleLogin(e) {
+    e.preventDefault();
+    const id   = document.getElementById('l-id').value.trim().toUpperCase();
+    const pass = document.getElementById('l-pass').value;
+    const db   = getDB();
+    const student = db.find(s => s.id === id && s.pass === pass);
+
+    if (!student) {
+      return showMsg('login-msg', 'error', 'Invalid Student ID or password.');
+    }
+
+    // Update login stats
+    const stats = getStats();
+    stats.logins = (stats.logins || 0) + 1;
+    saveStats(stats);
+
+    showDashboard(student);
+  }
+
+  // ── Dashboard ──
+  function showDashboard(student) {
+    document.getElementById('auth-section').style.display = 'none';
+    const dash = document.getElementById('dashboard');
+    dash.classList.add('show');
+
+    document.getElementById('dash-name').textContent   = student.name;
+    document.getElementById('dash-id').textContent     = student.id + ' · ' + student.course;
+    document.getElementById('dash-course').textContent = student.course;
+    document.getElementById('dash-session').textContent = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+
+    renderTable();
+    updateStats();
+  }
+
+  function logout() {
+    document.getElementById('auth-section').style.display = '';
+    document.getElementById('dashboard').classList.remove('show');
+    document.getElementById('login-form').reset();
+    clearMsgs();
+    updateStats();
+  }
+
+  function renderTable() {
+    const db = getDB();
+    const tbody = document.getElementById('db-body');
+    tbody.innerHTML = db.length
+      ? db.map(s => `<tr><td>${s.id}</td><td>${s.name}</td><td>${s.course}</td><td>${s.registered}</td></tr>`).join('')
+      : `<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:20px">No students registered yet.</td></tr>`;
+  }
+
+  function updateStats() {
+    const db = getDB();
+    const stats = getStats();
+    document.getElementById('reg-count').textContent   = db.length;
+    document.getElementById('login-count').textContent = stats.logins || 0;
+  }
+
+  // Init
+  updateStats();
+
+  // Pre-seed a demo student if DB is empty
+  if (getDB().length === 0) {
+    const demo = [{ id: 'STU-2024-001', name: 'Maria Santos', course: 'Computer Science', pass: 'demo123', registered: new Date().toLocaleDateString() }];
+    saveDB(demo);
+    updateStats();
+  }
+</script>
+</body>
+</html>
