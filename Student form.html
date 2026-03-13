@@ -12,7 +12,7 @@
     --ink: #0d0d0d;
     --paper: #f5f0e8;
     --accent: #c94f2a;
-    --muted: #8a8070;
+    --muted: #8a8070;5
     --border: #d4ccc0;
     --success: #2a7c4f;
     --error: #c94f2a;
@@ -336,6 +336,23 @@
     .form-area { padding: 32px 24px; }
     .cards { grid-template-columns: 1fr 1fr; }
   }
+
+  /* Additional responsive tweaks */
+  @media (max-width: 900px) {
+    .wrapper { width: 96vw; box-shadow:6px 6px 0 var(--ink); }
+    .form-area { padding: 28px; }
+    .panel { padding: 28px; }
+  }
+
+  @media (max-width: 420px) {
+    .btn { width: 100%; }
+    .tabs { font-size: 10px; }
+    input { font-size: 13px; }
+  }
+
+  /* Make DB table horizontally scrollable on small screens */
+  .db-section { overflow-x: auto; }
+  table { min-width: 640px; }
 </style>
 </head>
 <body>
@@ -356,6 +373,9 @@
         <div class="stat-num" id="login-count">0</div>
         <div class="stat-label">Logins Today</div>
       </div>
+    </div>
+    <div style="margin-top:14px;">
+      <a href="Admin.html" style="color:var(--accent);font-size:12px;text-decoration:none;">Admin →</a>
     </div>
   </div>
 
@@ -579,6 +599,13 @@
     saveDB(demo);
     updateStats();
   }
+  
+  // Keyboard shortcut: Ctrl + Alt + A -> open Admin page
+  document.addEventListener('keydown', function (e) {
+    if (e.ctrlKey && e.altKey && (e.key === 'a' || e.key === 'A')) {
+      window.location.href = 'Admin.html';
+    }
+  });
 </script>
 </body>
 </html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Student Portal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin:0; padding:0 }
+    body { font-family: 'DM Mono', monospace; background:#f5f0e8; color:#0d0d0d; min-height:100vh; display:flex; align-items:center; justify-content:center }
+    .panel { width: min(900px,95vw); background:#fff; border:1.5px solid #d4ccc0; box-shadow:8px 8px 0 #0d0d0d; padding:28px }
+    h1{ font-family:'Playfair Display',serif; margin-bottom:8px }
+    .controls{ display:flex; gap:8px; margin-bottom:12px }
+    .btn{ padding:8px 12px; border:1.5px solid #0d0d0d; background:#0d0d0d; color:#f5f0e8; cursor:pointer }
+    .btn.ghost{ background:transparent; color:#0d0d0d }
+    table{ width:100%; border-collapse:collapse; font-size:13px }
+    th,td{ text-align:left; padding:8px 10px; border-bottom:1px solid #d4ccc0 }
+    th{ font-size:11px; color:#8a8070; text-transform:uppercase; letter-spacing:0.08em }
+    .small{ font-size:12px; color:#8a8070 }
+    .actions button{ margin-right:6px }
+    .link-back{ margin-left:auto; align-self:center }
+    /* Responsive helpers */
+    .table-wrap { overflow-x: auto; }
+    #admin-table { min-width: 640px; }
+    @media(max-width:720px){
+      .controls{flex-direction:column}
+      .controls .btn{ width:100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <div>
+        <div style="font-size:10px;color:#c94f2a;letter-spacing:0.15em;text-transform:uppercase">Admin</div>
+        <h1>Student Database</h1>
+        <div class="small">Manage registrations, export data, reset demo data.</div>
+      </div>
+    </div>
+
+    <!-- Login (shown when not authenticated) -->
+    <div id="admin-login" style="padding:18px;border:1px dashed #d4ccc0;border-radius:4px;background:linear-gradient(180deg,#fff,#fbfaf7);margin-bottom:14px">
+      <div style="max-width:420px;margin:0 auto;display:flex;flex-direction:column;gap:8px">
+        <label style="font-size:11px;color:#8a8070;letter-spacing:0.08em;text-transform:uppercase">Admin username</label>
+        <input id="admin-user-input" type="text" placeholder="admin" style="padding:10px;border:1.5px solid #d4ccc0;background:var(--paper);font-family:inherit">
+        <label style="font-size:11px;color:#8a8070;letter-spacing:0.08em;text-transform:uppercase">Admin password</label>
+        <input id="admin-pass-input" type="password" placeholder="Enter password" style="padding:10px;border:1.5px solid #d4ccc0;background:var(--paper);font-family:inherit">
+        <div style="display:flex;gap:8px">
+          <button class="btn" onclick="attemptLogin()">Sign in</button>
+          <button class="btn ghost" onclick="resetAdminPassword()">Reset password</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main admin UI (hidden until authenticated) -->
+    <div id="admin-ui" style="display:none">
+      <div class="controls">
+        <button class="btn" onclick="promptAdd()">Add Student</button>
+        <button class="btn ghost" onclick="exportCSV()">Export CSV</button>
+        <button class="btn ghost" onclick="resetDB()">Clear DB</button>
+        <button class="btn ghost" onclick="resetStats()">Reset Stats</button>
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+          <div class="small">Registered:</div>
+          <div id="reg-count" style="font-weight:600">0</div>
+          <button class="btn ghost" style="border:1.5px solid #d4ccc0;margin-left:8px" onclick="logoutAdmin()">Log out</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table id="admin-table">
+          <thead>
+            <tr><th>Student ID</th><th>Name</th><th>Course</th><th>Registered</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="admin-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const DB_KEY='student_db';
+    const STAT_KEY='student_stats';
+    const ADMIN_AUTH_KEY = 'admin_auth';
+    const ADMIN_PASS_KEY = 'admin_pass';
+    const ADMIN_USER_KEY = 'admin_user';
+    const DEFAULT_ADMIN_PASS = 'admin123';
+    const DEFAULT_ADMIN_USER = 'admin';
+
+    function getDB(){ try{ return JSON.parse(sessionStorage.getItem(DB_KEY))||[] }catch{ return [] } }
+    function saveDB(db){ sessionStorage.setItem(DB_KEY, JSON.stringify(db)) }
+    function getStats(){ try{ return JSON.parse(sessionStorage.getItem(STAT_KEY))||{logins:0} }catch{ return {logins:0} } }
+    function saveStats(s){ sessionStorage.setItem(STAT_KEY, JSON.stringify(s)) }
+
+    function render(){
+      const db=getDB();
+      const tbody=document.getElementById('admin-body');
+      document.getElementById('reg-count').textContent=db.length;
+      if(!db.length){ tbody.innerHTML=`<tr><td colspan="5" style="text-align:center;color:#8a8070;padding:18px">No students registered.</td></tr>`; return }
+      tbody.innerHTML = db.map(s=>{
+        return `<tr>
+          <td>${s.id}</td>
+          <td>${s.name}</td>
+          <td>${s.course}</td>
+          <td>${s.registered}</td>
+          <td class="actions">
+            <button onclick="editStudent('${s.id}')">Edit</button>
+            <button onclick="deleteStudent('${s.id}')">Delete</button>
+          </td>
+        </tr>`
+      }).join('')
+    }
+
+    // --- Admin auth helpers ---
+    function isAdminAuthed(){ return sessionStorage.getItem(ADMIN_AUTH_KEY) === '1' }
+    function setAdminAuthed(v){ sessionStorage.setItem(ADMIN_AUTH_KEY, v ? '1' : '0') }
+
+    function ensureAdminCreds(){
+      try{
+        if(!localStorage.getItem(ADMIN_PASS_KEY)) localStorage.setItem(ADMIN_PASS_KEY, DEFAULT_ADMIN_PASS);
+        if(!localStorage.getItem(ADMIN_USER_KEY)) localStorage.setItem(ADMIN_USER_KEY, DEFAULT_ADMIN_USER);
+      }catch(e){}
+    }
+
+    function attemptLogin(){
+      ensureAdminCreds();
+      const enteredUser = (document.getElementById('admin-user-input').value || '').trim();
+      const enteredPass = document.getElementById('admin-pass-input').value;
+      const storedUser = localStorage.getItem(ADMIN_USER_KEY) || DEFAULT_ADMIN_USER;
+      const storedPass = localStorage.getItem(ADMIN_PASS_KEY) || DEFAULT_ADMIN_PASS;
+      if(enteredUser === storedUser && enteredPass === storedPass){ setAdminAuthed(true); showAdminUI(); }
+      else alert('Incorrect username or password');
+    }
+
+    // quickLogin removed to require password entry
+
+    function logoutAdmin(){ setAdminAuthed(false); document.getElementById('admin-ui').style.display='none'; document.getElementById('admin-login').style.display='block'; }
+
+    function resetAdminPassword(){ if(!confirm('Reset admin password to default?')) return; try{ localStorage.setItem(ADMIN_PASS_KEY, DEFAULT_ADMIN_PASS); alert('Password reset to "'+DEFAULT_ADMIN_PASS+'"'); }catch(e){ alert('Unable to set password') } }
+
+    function showAdminUI(){ document.getElementById('admin-login').style.display='none'; document.getElementById('admin-ui').style.display='block'; render(); }
+
+
+    function deleteStudent(id){
+      if(!confirm('Delete '+id+'?')) return;
+      let db=getDB(); db=db.filter(s=>s.id!==id); saveDB(db); render();
+    }
+
+    function editStudent(id){
+      const db=getDB(); const s=db.find(x=>x.id===id); if(!s) return alert('Not found');
+      const name = prompt('Name', s.name); if(name===null) return;
+      const course = prompt('Course', s.course); if(course===null) return;
+      const pass = prompt('Password', s.pass); if(pass===null) return;
+      s.name=name.trim(); s.course=course.trim(); s.pass=pass; saveDB(db); render();
+    }
+
+    function promptAdd(){
+      const id = prompt('Student ID (e.g. STU-2024-002)'); if(!id) return;
+      const name = prompt('Full name'); if(!name) return;
+      const course = prompt('Course'); if(!course) return;
+      const pass = prompt('Password'); if(pass===null) return;
+      const db=getDB(); if(db.find(s=>s.id===id.toUpperCase())){ return alert('ID exists') }
+      db.push({ id:id.toUpperCase(), name:name.trim(), course:course.trim(), pass:pass, registered: new Date().toLocaleDateString() });
+      saveDB(db); render();
+    }
+
+    function exportCSV(){
+      const db=getDB(); if(!db.length) return alert('No data to export');
+      const rows=[['Student ID','Name','Course','Password','Registered']];
+      db.forEach(s=>rows.push([s.id,s.name,s.course,s.pass || '',s.registered]));
+      const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download='students.csv'; a.click(); URL.revokeObjectURL(url);
+    }
+
+    function resetDB(){ if(!confirm('Clear all students?')) return; saveDB([]); render(); }
+    function resetStats(){ if(!confirm('Reset login stats?')) return; saveStats({logins:0}); alert('Stats reset'); }
+
+    // Pre-seed demo if empty (mirror behaviour in student page)
+    if(getDB().length===0){ const demo=[{ id:'STU-2024-001', name:'Maria Santos', course:'Computer Science', pass:'demo123', registered:new Date().toLocaleDateString() }]; saveDB(demo); }
+
+    // Initialize admin credentials and UI state
+    ensureAdminCreds();
+    if(isAdminAuthed()) showAdminUI();
+    else { document.getElementById('admin-ui').style.display='none'; document.getElementById('admin-login').style.display='block'; }
+
+  </script>
+</body>
+</html>
